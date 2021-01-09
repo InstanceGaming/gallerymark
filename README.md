@@ -7,7 +7,7 @@ Faster bulk PDF grading.
 2. Download the GalleryMark repository as a archive.
 3. Extract the `gallerymark` folder from the archive into a location of your choosing.
 4. Navigate to the `gallerymark` folder.
-5. Run the installation script, `install.bat`. This only needs to be done once.
+5. Run the installation script, `install.bat`. This only needs to be done once. You cannot move the installation folder after running this script (if you need to, delete the `env` folder and run again).
 6. To run GalleryMark, double-click `gallerymark.bat`.
 
 ### Packaged binary
@@ -32,13 +32,13 @@ To erase a pen stroke, press the "Eraser Tool" button or press `E`.
 
 For both the pen and eraser, you can undo the last drawn pen segment or eraser mark with `Ctrl+Z`. Use `Ctrl+Shift+Z` to redo.
 
-Once you are done marking the document, navigate to the File > Save menu option or press `Ctrl+S` to save a modified copy of the document. The copy will be saved within the same directory as the original, but with the file name template `<The original file name> (Graded)<The original extension>`.
+Once you are done marking the document, navigate to the File > Save menu option or press `Ctrl+S` to save a modified copy of the document. The copy will be saved within the same directory as the original, but with a file name following the form of `<The original file name> (Graded)<The original extension>`.
 
 #### By Directory
 
 Navigate to GalleryMark > Open directory... menu option or press `Ctrl+D`. In the dialog, locate the directory you would like to open and choose it.
 
-Once opened, PDF files present within the directory will be listed on the left (the file list). You can double-click any of them to open them, or use the up and down arrows keys to navigate between documents.
+Once opened, PDF files present within the directory will be listed on the left (the file list). You can double-click any to open them, or use the up and down arrows keys to navigate between documents.
 
 Within the file list, the names of each file may have the following characters before or after their name:
 
