@@ -13,59 +13,66 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 class Ui_About(object):
 
-    def __init__(self, app_name, app_version, app_url):
+    def __init__(self, app_icon, app_name, app_version, app_url):
+        self._icon = app_icon
         self._name = app_name
         self._version = app_version
         self._url = app_url
 
+        self.textTitle = None
+        self.textBody = None
+
     def setupUi(self, dialog):
         dialog.setObjectName('About')
-        dialog.resize(320, 200)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(dialog.sizePolicy().hasHeightForWidth())
-        dialog.setSizePolicy(sizePolicy)
-        font = QtGui.QFont()
-        font.setKerning(True)
-        dialog.setFont(font)
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout(dialog)
-        self.verticalLayout_2.setObjectName('verticalLayout_2')
-        self.verticalLayout = QtWidgets.QVBoxLayout()
-        self.verticalLayout.setObjectName('verticalLayout')
-        self.label = QtWidgets.QLabel(dialog)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
-        self.label.setSizePolicy(sizePolicy)
-        self.label.setMinimumSize(QtCore.QSize(320, 200))
-        self.label.setMaximumSize(QtCore.QSize(320, 200))
-        self.label.setTextFormat(QtCore.Qt.RichText)
-        self.label.setScaledContents(True)
-        self.label.setWordWrap(True)
-        self.label.setOpenExternalLinks(True)
-        self.label.setObjectName('textContents')
-        self.verticalLayout.addWidget(self.label)
-        self.verticalLayout_2.addLayout(self.verticalLayout)
+        dialog.resize(300, 250)
+
+        self.verticalLayout = QtWidgets.QVBoxLayout(dialog)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+
+        self.imageBox = QtWidgets.QLabel()
+        self.imageBox.setFixedSize(QtCore.QSize(100, 100))
+        self.imageBox.setScaledContents(True)
+        pixmap = self._icon.pixmap(self._icon.availableSizes()[-1])
+        self.imageBox.setPixmap(pixmap)
+        self.horizontalLayout.addWidget(self.imageBox)
+
+        self.textTitle = QtWidgets.QLabel()
+        self.textTitle.setTextFormat(QtCore.Qt.RichText)
+        self.textTitle.setScaledContents(True)
+        self.horizontalLayout.addWidget(self.textTitle)
+
+        self.verticalLayout.addLayout(self.horizontalLayout)
+
+        self.textBody = QtWidgets.QLabel(dialog)
+        self.textBody.setTextFormat(QtCore.Qt.RichText)
+        self.textBody.setScaledContents(True)
+        self.textBody.setWordWrap(True)
+        self.textBody.setOpenExternalLinks(True)
+
+        self.verticalLayout.addWidget(self.textBody)
 
         self.retranslateUi(dialog)
         QtCore.QMetaObject.connectSlotsByName(dialog)
 
-    def retranslateUi(self, Dialog):
+    def retranslateUi(self, dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate('About', 'About'))
-        self.label.setText('<html>'
-                           '<head/>'
-                           '<body>'
-                           '<b>{0} v{1}</b>'
-                           '<p>by Jacob Jewett</p>'
-                           '<p><a href="{2}">{2}</a></p>'
-                           '<p>Thank you to:<br/>'
-                           '- PyMuPDF (for the PDF I/O library)<br/>'
-                           '- PyQt5 (for this portable GUI framework)<br/>'
-                           '- pyinstaller (for an excellent Python packaging solution)<br/>'
-                           '- Mr. Garcia (for being an awesome math teacher)<br/>'
-                           '- Jak544 (for testing)</p>'
-                           '</body>'
-                           '</html>'.format(self._name, self._version, self._url))
+        dialog.setWindowTitle(_translate('About', 'About'))
+        self.textTitle.setText('<html>'
+                               '<head/>'
+                               '<body>'
+                               '<b>{0} v{1}</b>'
+                               '<p>by Jacob Jewett</p>'
+                               '</body>'
+                               '</html>'.format(self._name, self._version))
+        self.textBody.setText('<html>'
+                              '<head/>'
+                              '<body>'
+                              '<a href="{0}">{0}</a>'
+                              '<p>Thank you to:<br/>'
+                              '- PyMuPDF (for the PDF I/O library)<br/>'
+                              '- PyQt5 (for this portable GUI framework)<br/>'
+                              '- pyinstaller (for an excellent Python packaging solution)<br/>'
+                              '- Mr. Garcia (for being an awesome math teacher)<br/>'
+                              '- Jak544 (for testing)</p>'
+                              '</body>'
+                              '</html>'.format(self._url))

@@ -13,15 +13,16 @@ from PyQt5.QtCore import QPoint, Qt, QEvent, QCoreApplication, QSettings
 from PyQt5.QtGui import QPixmap, QColor, QPainter, QStandardItem, QStandardItemModel, QKeySequence, QIcon
 from PyQt5.QtWidgets import (QApplication, QLabel, QDesktopWidget, QMainWindow, QFileDialog, QWidget,
                              QVBoxLayout, QListView, QTabWidget, QMessageBox, QDialog, QUndoStack,
-                             QUndoCommand)
+                             QUndoCommand, QErrorMessage)
 
-from utils import get_download_path, generateDrawingPixmap, qtPixmapToJPG, get_file_size, format_file_size, copyPixmap
+from utils import (get_download_path, generateDrawingPixmap, qtPixmapToJPG, get_file_size, format_file_size,
+                   resource_path)
 
 from ui.mainwindow import Ui_MainWindow
 from ui.welcometab import Ui_WelcomeTab
 from ui.about import Ui_About
 
-APP_VERSION = '1.0.0'
+APP_VERSION = '1.0.1'
 APP_ICON = 'gallerymark.ico'
 APP_ORG = 'GalleryMark'
 APP_WEBSITE = 'https://github.com/InstanceGaming/gallerymark'
@@ -472,7 +473,8 @@ class GalleryMark(QMainWindow):
         self.l = l
 
         self._app = app
-        self.setWindowIcon(QIcon(APP_ICON))
+        self._app_icon = QIcon(resource_path(APP_ICON))
+        self.setWindowIcon(self._app_icon)
 
         self._settings = settings or QSettings(QSettings.UserScope, APP_ORG, APP_NAME)
 
@@ -725,17 +727,23 @@ class GalleryMark(QMainWindow):
     def openDirectory(self, path):
         self.closeDirectory()
 
-        self._active_dir = GMDir(self, path)
-        self._active_dir.setupTab(self.ui.tabWidget)
+        try:
+            self._active_dir = GMDir(self, path)
+            self._active_dir.setupTab(self.ui.tabWidget)
 
-        self.ui.tabWidget.setCurrentIndex(self._active_dir.tab_index)
+            self.ui.tabWidget.setCurrentIndex(self._active_dir.tab_index)
 
-        if len(self._active_dir.documents) > 0:
-            if self._active_doc is not None:
-                self.closeDocument()
+            if len(self._active_dir.documents) > 0:
+                if self._active_doc is not None:
+                    self.closeDocument()
 
-            doc = self._active_dir.getDocumentByIndex(0)
-            self.openDocument(doc)
+                doc = self._active_dir.getDocumentByIndex(0)
+                self.openDocument(doc)
+        except OSError as e:
+            msg = 'Failed to open directory "{}": {}'.format(path, str(e))
+            self.l.error(msg)
+            QErrorMessage(self).showMessage(msg)
+            self.tempStatusMessage('Could not open directory "{}".'.format(path))
 
         self.updateDirectoryActions()
         self.updateFileActions()
@@ -744,12 +752,18 @@ class GalleryMark(QMainWindow):
         if self._active_dir is not None:
             self.ui.tabWidget.tabCloseRequested.emit(self._active_dir.tab_index)
 
-    def saveMarkedCopy(self):
-        self._active_doc.saveDrawingPDF()
-        file_size = get_file_size(self._active_doc.getSavePath())
+    def saveCopy(self):
         file_name = self._active_doc.getSaveFilename()
-        self.l.info('Saved graded copy "{}" of "{}".'.format(file_name, self._active_doc.path))
-        self.tempStatusMessage('Saved graded copy as "{}" ({})'.format(file_name, format_file_size(file_size)))
+
+        try:
+            self._active_doc.saveDrawingPDF()
+            file_size = get_file_size(self._active_doc.getSavePath())
+            self.l.info('Saved copy "{}" from "{}".'.format(file_name, self._active_doc.path))
+            self.tempStatusMessage('Saved copy as "{}" ({})'.format(file_name, format_file_size(file_size)))
+        except RuntimeError as e:
+            msg = 'Failed to save "{}": {}'.format(file_name, str(e))
+            self.l.error(msg)
+            QErrorMessage(self).showMessage(msg)
 
         if self._active_dir is not None:
             self._active_dir.refresh()
@@ -777,7 +791,9 @@ class GalleryMark(QMainWindow):
 
             self.onDocumentOpened()
         except RuntimeError as e:
-            self.l.error('Could not open "{}": {}'.format(doc.name, str(e)))
+            msg = 'Failed to open "{}": {}'.format(doc.name, str(e))
+            self.l.error(msg)
+            QErrorMessage(self).showMessage(msg)
             self.tempStatusMessage('Could not open "{}".'.format(doc.name))
 
             if self._active_dir is not None:
@@ -804,7 +820,7 @@ class GalleryMark(QMainWindow):
 
     def onAboutClicked(self):
         dialog = QDialog(self)
-        ui = Ui_About(APP_NAME, APP_VERSION, APP_WEBSITE)
+        ui = Ui_About(self._app_icon, APP_NAME, APP_VERSION, APP_WEBSITE)
         ui.setupUi(dialog)
         dialog.exec()
 
@@ -851,17 +867,22 @@ class GalleryMark(QMainWindow):
 
             self._active_dir.refresh()
 
+        self.updateDirectoryActions()
+
     def onCloseOpenFilesTriggered(self):
         if self._active_dir is not None:
             for doc in self._active_dir.documents:
                 if doc == self._active_doc:
-                    self.closeDocument()
+                    if not self.closeDocument():
+                        break
                 else:
                     if doc.is_open:
                         if not doc.close():
                             break
 
             self._active_dir.refresh()
+
+        self.updateDirectoryActions()
 
     def onShowExplorerTriggered(self):
         if self._active_dir is not None:
@@ -970,7 +991,7 @@ class GalleryMark(QMainWindow):
             self.l.info('open file: path is empty, ignoring.')
 
     def onFileSaveTriggered(self):
-        self.saveMarkedCopy()
+        self.saveCopy()
 
     def onCloseFileTriggered(self):
         self.closeDocument()

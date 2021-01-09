@@ -1,6 +1,13 @@
 import os
+import sys
 from PyQt5.QtCore import QByteArray, QBuffer, QIODevice, QFile
 from PyQt5.QtGui import QColor, QPixmap
+
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    bundle_dir = getattr(sys, '_MEIPASS', os.path.abspath('.'))
+    return os.path.abspath(os.path.join(bundle_dir, relative_path))
 
 
 def format_file_size(size):
