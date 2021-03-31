@@ -1,6 +1,7 @@
-from PyQt5.QtCore import Qt, pyqtSignal, QRectF, QPoint
+from PyQt5.QtCore import Qt, pyqtSignal, QRectF
 from PyQt5.QtGui import QPainter, QPen, QColor, QBrush
 from PyQt5.QtWidgets import (QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsEllipseItem, QAction)
+
 from gallerymark import ToolMode, DrawCommand
 from utils import copyPixmap
 
@@ -46,6 +47,7 @@ class PageViewer(QGraphicsView):
 
         self._page = None
 
+        # todo: add all these constants to preferences dialog
         self._zoom = 0
         self._zoomMaxDistance = 10
         self._zoomInFactor = 1.25

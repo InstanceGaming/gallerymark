@@ -1,7 +1,9 @@
 import os
 import sys
+
 from PyQt5.QtCore import QByteArray, QBuffer, QIODevice, QFile
 from PyQt5.QtGui import QColor, QPixmap
+from PyQt5.QtWidgets import QWidget, QErrorMessage
 
 
 def resource_path(relative_path):
@@ -10,9 +12,15 @@ def resource_path(relative_path):
     return os.path.abspath(os.path.join(bundle_dir, relative_path))
 
 
+def show_error_dialog(parent: QWidget, message: str):
+    em = QErrorMessage(parent)
+    em.adjustSize()
+    em.showMessage(message)
+
+
 def format_file_size(size):
     # 2**10 = 1024
-    power = 2**10
+    power = 2 ** 10
     n = 0
     power_labels = {0: '', 1: 'K', 2: 'M', 3: 'G', 4: 'T'}
     while size > power:

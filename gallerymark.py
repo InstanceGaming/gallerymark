@@ -1,28 +1,26 @@
+import argparse
 import logging
 import os
 import sys
-import argparse
-import fitz
 import webbrowser
 from enum import IntEnum
 from pathlib import Path
 
+import fitz
 import qdarkstyle
-
 from PyQt5.QtCore import QPoint, Qt, QEvent, QCoreApplication, QSettings
 from PyQt5.QtGui import QPixmap, QColor, QPainter, QStandardItem, QStandardItemModel, QKeySequence, QIcon
 from PyQt5.QtWidgets import (QApplication, QLabel, QDesktopWidget, QMainWindow, QFileDialog, QWidget,
                              QVBoxLayout, QListView, QTabWidget, QMessageBox, QDialog, QUndoStack,
-                             QUndoCommand, QErrorMessage)
+                             QUndoCommand)
 
-from utils import (get_download_path, generateDrawingPixmap, qtPixmapToJPG, get_file_size, format_file_size,
-                   resource_path)
-
+from ui.about import Ui_About
 from ui.mainwindow import Ui_MainWindow
 from ui.welcometab import Ui_WelcomeTab
-from ui.about import Ui_About
+from utils import (get_download_path, generateDrawingPixmap, qtPixmapToJPG, get_file_size, format_file_size,
+                   resource_path, show_error_dialog)
 
-APP_VERSION = '1.0.1'
+APP_VERSION = '1.0.2'
 APP_ICON = 'gallerymark.ico'
 APP_ORG = 'GalleryMark'
 APP_WEBSITE = 'https://github.com/InstanceGaming/gallerymark'
@@ -44,7 +42,7 @@ class DrawCommand(QUndoCommand):
 
     @property
     def before(self):
-        return self._pixmap_before
+        return self._before
 
     @property
     def current(self):
@@ -108,6 +106,7 @@ class GMPage:
         self._mu_page = mu_page
 
         # zoom in to get higher resolution pixmap
+        # todo: add this param to preferences dialog
         zoom = 2
         matrix = fitz.Matrix(zoom, zoom)
 
@@ -215,6 +214,7 @@ class GMDoc:
         return None
 
     def loadRemainingPages(self):
+        # this implementation makes loading large PDF's a really..really bad idea.
         existing_indices = [ep.index for ep in self._pages]
         loaded_pages = []
         indices = list(range(self.getPageCount()))
@@ -230,6 +230,7 @@ class GMDoc:
         split = os.path.splitext(self.name)
         name = split[0]
         ext = split[1]
+        # todo: add this param to preferences dialog
         return '{} (Graded){}'.format(name, ext)
 
     def getSavePath(self):
@@ -361,6 +362,9 @@ class GMDir:
 
                         if not found:
                             self.documents.append(GMDoc(full_path))
+
+        if self._active_document is None and len(self._documents) > 0:
+            self.setActiveDocument(self._documents[0])
 
         self.updateState()
 
@@ -519,6 +523,7 @@ class GalleryMark(QMainWindow):
                 self.center()
             else:
                 self.move(self._window_pos)
+            # window size will be set by loadSettings() before this point
             self.resize(self._window_size)
             self.setVisible(True)
 
@@ -544,6 +549,7 @@ class GalleryMark(QMainWindow):
         self.ui.actionShowExplorer.triggered.connect(self.onShowExplorerTriggered)
         self.ui.actionDirectoryClose.triggered.connect(self.onDirectoryCloseTriggered)
         self.ui.actionExit.triggered.connect(self.onExitTriggered)
+        # QtCreator won't allow setting shortcuts to Alt-F4...you can probably guess why.
         self.ui.actionExit.setShortcut(QKeySequence('Alt+F4'))
         self.ui.actionFileOpen.triggered.connect(self.onOpenFileTriggered)
         self.ui.actionFileSave.triggered.connect(self.onFileSaveTriggered)
@@ -567,6 +573,7 @@ class GalleryMark(QMainWindow):
         self.ui.actionPenTool.changed.connect(self.onPenToolChanged)
         self.ui.actionEraserTool.changed.connect(self.onEraserToolChanged)
 
+        # manually install tools commands into menu from page viewer
         self.ui.menuTools.addSeparator()
         decrease_action = self.ui.pageViewer.getDecreaseSizeAction()
         decrease_action.setShortcut(QKeySequence('['))
@@ -659,6 +666,7 @@ class GalleryMark(QMainWindow):
         self.ui.actionNextFile.setEnabled(dir_open and self._active_dir.getNextDocument() is not None)
 
         if dir_open:
+            self._active_dir.setActiveDocument(self._active_doc)
             self._active_dir.updateState()
             self.ui.actionSaveOpenFiles.setEnabled(self._active_dir.unsaved_count > 0)
             self.ui.actionCloseOpenFiles.setEnabled(self._active_dir.open_count > 0)
@@ -711,7 +719,6 @@ class GalleryMark(QMainWindow):
 
     def updatePageCountLabel(self):
         page_num = 1
-        pages = 1
 
         if self._active_page is not None:
             page_num = self._active_page.index + 1
@@ -740,9 +747,9 @@ class GalleryMark(QMainWindow):
                 doc = self._active_dir.getDocumentByIndex(0)
                 self.openDocument(doc)
         except OSError as e:
-            msg = 'Failed to open directory "{}": {}'.format(path, str(e))
+            msg = str(e).capitalize()
             self.l.error(msg)
-            QErrorMessage(self).showMessage(msg)
+            show_error_dialog(self, msg)
             self.tempStatusMessage('Could not open directory "{}".'.format(path))
 
         self.updateDirectoryActions()
@@ -751,6 +758,8 @@ class GalleryMark(QMainWindow):
     def closeDirectory(self):
         if self._active_dir is not None:
             self.ui.tabWidget.tabCloseRequested.emit(self._active_dir.tab_index)
+
+        self.closeDocument()
 
     def saveCopy(self):
         file_name = self._active_doc.getSaveFilename()
@@ -761,9 +770,9 @@ class GalleryMark(QMainWindow):
             self.l.info('Saved copy "{}" from "{}".'.format(file_name, self._active_doc.path))
             self.tempStatusMessage('Saved copy as "{}" ({})'.format(file_name, format_file_size(file_size)))
         except RuntimeError as e:
-            msg = 'Failed to save "{}": {}'.format(file_name, str(e))
+            msg = str(e).capitalize()
             self.l.error(msg)
-            QErrorMessage(self).showMessage(msg)
+            show_error_dialog(self, msg)
 
         if self._active_dir is not None:
             self._active_dir.refresh()
@@ -777,24 +786,22 @@ class GalleryMark(QMainWindow):
             self._active_page = result
             self.onPageLoaded()
 
-    def openDocument(self, doc):
-        assert isinstance(doc, GMDoc)
+    def openDocument(self, new_doc, standalone=False):
+        assert isinstance(new_doc, GMDoc)
 
-        self._active_doc = doc
+        if standalone:
+            self.closeDirectory()
+
+        self._active_doc = new_doc
 
         try:
             self._active_doc.open()
-
-            if self._active_dir is not None:
-                if self._active_doc in self._active_dir.documents:
-                    self._active_dir.setActiveDocument(self._active_doc)
-
             self.onDocumentOpened()
         except RuntimeError as e:
-            msg = 'Failed to open "{}": {}'.format(doc.name, str(e))
+            msg = str(e).capitalize()
             self.l.error(msg)
-            QErrorMessage(self).showMessage(msg)
-            self.tempStatusMessage('Could not open "{}".'.format(doc.name))
+            show_error_dialog(self, msg)
+            self.tempStatusMessage('Could not open "{}".'.format(new_doc.name))
 
             if self._active_dir is not None:
                 self._active_dir.refresh()
@@ -875,10 +882,10 @@ class GalleryMark(QMainWindow):
                 if doc == self._active_doc:
                     if not self.closeDocument():
                         break
-                else:
-                    if doc.is_open:
-                        if not doc.close():
-                            break
+
+                if doc.is_open:
+                    if not doc.close():
+                        break
 
             self._active_dir.refresh()
 
@@ -984,7 +991,7 @@ class GalleryMark(QMainWindow):
         if path and path is not '':
             if os.path.exists(path):
                 self._explore_path = path
-                self.openDocument(GMDoc(path))
+                self.openDocument(GMDoc(path), standalone=True)
             else:
                 self.l.info('open file: "{}" does not exist, ignoring.'.format(path))
         else:

@@ -3,7 +3,8 @@ Faster bulk PDF grading.
 
 ## Installation
 ### Running using Python
-1. Ensure you have the latest version of Python 3 installed and on your PATH.
+1. Ensure you have the latest version of Python 3 installed **and on your PATH** (check "add to PATH" during
+   installation).
 2. Download the GalleryMark repository as a archive.
 3. Extract the `gallerymark` folder from the archive into a location of your choosing.
 4. Navigate to the `gallerymark` folder.
@@ -46,20 +47,30 @@ Within the file list, the names of each file may have the following characters b
 - A `+` character before the file name indicates that the file is currently in use by the program.
 - A `*` character after the file name indicates that there are unsaved changes within that file.
 
-Adding or removing files in the currently opened directory externally will not be reflected in the file list until it is manually refreshed. To refresh, navigate to the GalleryMark > Refresh menu option or press `F5`.
+Adding or removing files in the currently opened directory externally will not be reflected in the file list until it is
+manually refreshed. To refresh, navigate to the GalleryMark > Refresh menu option or press `F5`.
 
-If you would like to save all opened documents at once, navigate to the GalleryMark > Save open files menu option or press `Ctrl+Alt+S`.
+If you would like to save all opened documents at once, navigate to the GalleryMark > Save open files menu option or
+press `Ctrl+Alt+S`.
 
-If you would like to view the currently opened directory in your systems file explorer, navigate to the GalleryMark > Show in explorer menu option or press `Ctrl+E`.
+If you would like to view the currently opened directory in your systems file explorer, navigate to the GalleryMark >
+Show in explorer menu option or press `Ctrl+E`.
+
+## Known issues
+
+- The eraser acts more like correction paint
+- Poor performance with large PDF's
 
 ## Future
+
 In the future, I would like to add the following features (in order of least to most complex):
 
 - A way to customize the file name save template.
 - A way to customize where file copies are saved.
+- Autosave.
+- A dedicated preferences' editor dialog.
 - Allowing multiple directories to be open at once.
-- A dedicated preferences editor dialog.
+- Support to view Microsoft Word `DOCX` files.
 - Text tool.
 - LaTeX math formula tool.
-- Support to view Microsoft Word `DOCX` files.
 - Automatic file list refresh upon file system modification.
